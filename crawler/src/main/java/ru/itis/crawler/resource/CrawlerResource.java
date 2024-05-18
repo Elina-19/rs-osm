@@ -21,11 +21,11 @@ public class CrawlerResource {
 
     private final CrawlerService crawlerService;
 
-//    @GET
-//    public Response parse(@QueryParam("url") String url, @QueryParam("quantity") Integer quantity) {
-//        crawlerService.parse(url, quantity);
-//        return Response.ok().build();
-//    }
+    @GET
+    public Response parse(@QueryParam("url") String url, @QueryParam("quantity") Integer quantity) {
+        crawlerService.parse(url, quantity);
+        return Response.ok().build();
+    }
 
     @Operation(summary = "Получение связанных записей")
     @GET

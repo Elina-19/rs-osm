@@ -38,7 +38,9 @@ public class YandexCrawlerService {
                     .map(link -> link + "/spec?track=char")
                     .collect(Collectors.toList());
             links.addAll(pageLinks);
-            if (links.size() >= quantity || pageLinks.isEmpty()) return links;
+            if (links.size() >= quantity || pageLinks.isEmpty()) {
+                return links.stream().limit(quantity).collect(Collectors.toSet());
+            }
         }
     }
 
@@ -46,7 +48,11 @@ public class YandexCrawlerService {
         var document = webDriverParser.getPage(url);
         var ratingText = getElementTextByAttr(document, "data-zone-name", "Stars");
         var isServiced = getElementTextByIdAndTag(document, "obsluzhivanie");
-        var typeSize = getElementTextById(document, "tiporazmer");
+        var typeSize = getElementTextByIdAndTag(document, "razmery");
+
+        if (typeSize == null) {
+            typeSize = getElementTextByIdAndTag(document, "tiporazmer");
+        }
 
         var parsedDto = ParsedDTO.builder()
                 .crawling_start(crawlingStart)
@@ -59,7 +65,7 @@ public class YandexCrawlerService {
                 .ratingsNumber(strToInteger(StringUtils.substringBetween(ratingText, "(", ")")))
                 .url(url)
                 .polarity(getElementTextById(document, "poliarnost"))
-                .voltage(strToInteger(getElementTextById(document, "napriazhenie")))
+                .voltage(strToInteger(getElementTextByIdAndTag(document, "napriazhenie")))
                 .inrushCurrent(strToInteger(getElementTextById(document, "puskovoi tok")))
                 .capacity(strToInteger(getElementTextById(document, "emkost")))
                 .typeOfVehicle(getElementTextByIdAndTag(document, "tip avtotekhniki"))
@@ -75,7 +81,7 @@ public class YandexCrawlerService {
                 .height(strToDouble(StringUtils.substringAfterLast(typeSize, "х")))
                 .weight(strToDouble(getElementTextById(document, "ves")))
                 .serviceLife(strToInteger(getElementTextByIdAndTag(document, "srok sluzhby")))
-                .warrantyPeriod(strToInteger(getElementTextById(document, "garantiinyi srok")))
+                .warrantyPeriod(strToInteger(getElementTextByIdAndTag(document, "garantiinyi srok")))
                 .build();
         setPrice(parsedDto, document);
 
@@ -83,7 +89,7 @@ public class YandexCrawlerService {
     }
 
     private void setPrice(ParsedDTO parsed, Optional<Document> document) {
-        var price = strToDouble(getElementTextByAttr(document, "data-auto", "snippet-price-current"));
+        var price = strToDouble(StringUtils.replaceAll(getElementTextByAttr(document, "data-auto", "snippet-price-current"), "\\s", ""));
         var oldPrice = Optional.ofNullable(getElementTextByAttr(document, "data-auto", "snippet-price-old"))
                 .map(p -> StringUtils.substringBefore(p, "₽"))
                 .map(CrawlerUtils::strToDouble)
